@@ -91,6 +91,10 @@ func (c *ChatContext) SaveConversation(path string) error {
 	return os.WriteFile(path, buffer.Bytes(), 0644)
 }
 
+func (c *ChatContext) GetSeqTimes() int {
+	return c.seqTimes
+}
+
 // LoadConversation 加载对话
 func (c *ChatContext) LoadConversation(path string) error {
 	data, err := os.ReadFile(path)
