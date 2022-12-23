@@ -1,6 +1,10 @@
 package chatgpt
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -77,6 +81,51 @@ func TestMaintainContext(t *testing.T) {
 
 	// 对话次数已经超过 1 次，因此最先前的对话已被移除，AI 理应不知道他叫老三
 	assert.NotContains(t, reply, "老三")
+}
+
+const tiangouURL = "https://raw.githubusercontent.com/SAGIRI-kawaii/sagiri-bot/Ariadne-v4/modules/self_contained/pero_dog/pero_content.json"
+
+func getRandomText(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var data map[string][]interface{}
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return "", err
+	}
+	return data["data"][rand.Intn(len(data["data"]))].(string), nil
+}
+
+// 这限制.... 没救了
+func TestMaxmiumText(t *testing.T) {
+	key := os.Getenv("CHATGPT_API_KEY")
+	if key == "" {
+		t.Skip("CHATGPT_API_KEY is not set")
+	}
+	cli := New(key, "user1", time.Duration(0))
+	cli.ChatContext = NewContext(
+		WithMaxSeqTimes(50),
+		WithMaintainSeqTimes(true),
+	)
+	for i := 0; i < 50; i++ {
+		text, err := getRandomText(tiangouURL)
+		if err != nil {
+			t.Log(err)
+			continue
+		}
+		reply, err := cli.ChatWithContext(text)
+		if err != nil {
+			t.Skip(err)
+		}
+		t.Logf("%d: %s => %s", i+1, text, reply)
+	}
 }
 
 func init() {
