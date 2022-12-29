@@ -70,6 +70,9 @@ func NewContext(options ...ChatContextOption) *ChatContext {
 
 // PollConversation 移除最旧的一则对话
 func (c *ChatContext) PollConversation() {
+	if len(c.old) == 0 {
+		return
+	}
 	c.old = c.old[1:]
 	c.seqTimes--
 }
@@ -93,6 +96,10 @@ func (c *ChatContext) SaveConversation(path string) error {
 
 func (c *ChatContext) GetSeqTimes() int {
 	return c.seqTimes
+}
+
+func (c *ChatContext) GetConversationsSize() int {
+	return len(c.old)
 }
 
 // LoadConversation 加载对话
