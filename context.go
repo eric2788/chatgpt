@@ -34,6 +34,7 @@ type (
 		seqTimes int // 对话次数
 
 		maintainSeqTimes bool // 是否维护对话次数 (自动移除旧对话)
+		edited bool
 	}
 
 	ChatContextOption func(*ChatContext)
@@ -75,12 +76,14 @@ func (c *ChatContext) PollConversation() {
 	}
 	c.old = c.old[1:]
 	c.seqTimes--
+	c.edited = true
 }
 
 // ResetConversation 重置对话
 func (c *ChatContext) ResetConversation() {
 	c.old = []conversation{}
 	c.seqTimes = 0
+	c.edited = true
 }
 
 // SaveConversation 保存对话
@@ -91,7 +94,14 @@ func (c *ChatContext) SaveConversation(path string) error {
 	if err != nil {
 		return err
 	}
+	defer func(){
+		c.edited = false
+	}()
 	return os.WriteFile(path, buffer.Bytes(), 0644)
+}
+
+func (c *ChatContext) IsEdited() bool {
+	return c.edited
 }
 
 func (c *ChatContext) GetSeqTimes() int {
